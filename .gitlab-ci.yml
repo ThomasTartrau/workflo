@@ -1,0 +1,157 @@
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_COMMIT_TITLE =~ /^chore: release/'
+      variables:
+        RELEASE_COMMIT: "true"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+stages:
+  - check
+  - test
+  - build
+  - release
+
+variables:
+  CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
+  GIT_DEPTH: 1
+  GIT_STRATEGY: fetch
+
+.rust-cache: &rust-cache
+  cache:
+    key: rust-${CI_COMMIT_REF_SLUG}
+    fallback_keys:
+      - rust-${CI_DEFAULT_BRANCH}
+    paths:
+      - .cargo/registry/
+      - .cargo/git/
+      - target/
+
+# Validation jobs run only on MR pipelines.
+# Code is already validated before reaching main -- no need to re-check.
+# Release MRs from release-plz only bump Cargo.toml + CHANGELOG, no code changes --
+# skip validation to save CI time.
+.only-mr:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /^chore: release/'
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+cargo-fmt:
+  extends: .only-mr
+  stage: check
+  image: rust:1.86.0
+  <<: *rust-cache
+  variables:
+    RUSTFLAGS: "-D warnings"
+  script:
+    - rustup component add rustfmt
+    - cargo fmt --all -- --check
+
+cargo-clippy:
+  extends: .only-mr
+  stage: check
+  image: rust:1.86.0
+  <<: *rust-cache
+  variables:
+    RUSTFLAGS: "-D warnings"
+  script:
+    - rustup component add clippy
+    - cargo clippy --workspace --all-targets -- -D warnings
+
+cargo-audit:
+  extends: .only-mr
+  stage: check
+  image: rust:1.86.0
+  <<: *rust-cache
+  before_script:
+    - export PATH="${CI_PROJECT_DIR}/.cargo/bin:$PATH"
+  script:
+    - cargo install cargo-audit --locked
+    - cargo audit
+  allow_failure: false
+
+unit-tests:
+  extends: .only-mr
+  stage: test
+  image: rust:1.86.0
+  <<: *rust-cache
+  needs:
+    - cargo-clippy
+  variables:
+    RUSTFLAGS: "-D warnings"
+  script:
+    - cargo test --workspace
+
+doc-tests:
+  extends: .only-mr
+  stage: test
+  image: rust:1.86.0
+  <<: *rust-cache
+  needs:
+    - cargo-clippy
+  variables:
+    RUSTFLAGS: "-D warnings"
+  script:
+    - cargo test --workspace --doc
+
+# build-release:
+#   stage: build
+#   image: rust:1.86.0
+#   <<: *rust-cache
+#   script:
+#     - cargo build --workspace --release
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $RELEASE_COMMIT != "true"
+
+# release-plz-update:
+#   stage: release
+#   image: rust:1.86.0
+#   <<: *rust-cache
+#   needs:
+#     - build-release
+#   variables:
+#     GIT_DEPTH: 0
+#   before_script:
+#     - export PATH="${CI_PROJECT_DIR}/.cargo/bin:$PATH"
+#     - cargo install release-plz --locked
+#   script:
+#     - git config user.name "release-plz[bot]"
+#     - git config user.email "release-plz@users.noreply.gitlab.com"
+#     - git remote set-url origin "https://gitlab-ci-token:${GITLAB_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git"
+#     - git fetch origin "$CI_COMMIT_BRANCH"
+#     - git checkout -B "$CI_COMMIT_BRANCH" "origin/$CI_COMMIT_BRANCH"
+#     - release-plz release-pr --forge gitlab --git-token "$GITLAB_TOKEN"
+#     - |
+#       MR_IID=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+#         "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/merge_requests?state=opened&search=release-plz&in=source_branch&per_page=1" \
+#         | python3 -c "import sys,json; mrs=json.load(sys.stdin); print(mrs[0]['iid'] if mrs else '')")
+#       if [ -n "$MR_IID" ]; then
+#         curl -s --request PUT --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+#           "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/merge_requests/$MR_IID/merge" \
+#           --data "merge_when_pipeline_succeeds=true"
+#       fi
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $RELEASE_COMMIT != "true"
+
+# release-plz-release:
+#   stage: release
+#   image: rust:1.86.0
+#   <<: *rust-cache
+#   needs:
+#     - job: build-release
+#       optional: true
+#   variables:
+#     GIT_DEPTH: 0
+#   before_script:
+#     - export PATH="${CI_PROJECT_DIR}/.cargo/bin:$PATH"
+#     - cargo install release-plz --locked
+#   script:
+#     - git remote set-url origin "https://gitlab-ci-token:${GITLAB_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git"
+#     - git fetch origin "$CI_COMMIT_BRANCH"
+#     - git checkout -B "$CI_COMMIT_BRANCH" "origin/$CI_COMMIT_BRANCH"
+#     - release-plz release --forge gitlab --git-token "$GITLAB_TOKEN"
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

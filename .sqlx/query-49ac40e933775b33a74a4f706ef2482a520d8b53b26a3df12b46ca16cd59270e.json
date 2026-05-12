@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO workflow_execution_dependencies (execution_id, dependency_id) SELECT $1, unnest($2::uuid[]) ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "49ac40e933775b33a74a4f706ef2482a520d8b53b26a3df12b46ca16cd59270e"
+}

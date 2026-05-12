@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (lib_fsm.state_machine_transition($1, $2::lib_fsm.event_identifier)).abstract_state__id as \"id!: Uuid\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!: Uuid",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "lib_fsm.event_identifier",
+            "kind": {
+              "Domain": "Varchar"
+            }
+          }
+        }
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "78080b88b4c2aebf71a69baed37ea2a217991c576be0e6bf4b230d7aab117d58"
+}

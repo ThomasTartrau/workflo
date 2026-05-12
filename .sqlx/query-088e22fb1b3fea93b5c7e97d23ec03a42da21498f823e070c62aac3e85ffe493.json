@@ -1,0 +1,118 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT e.id, e.workflow_name, e.status,\n                      abs.name as \"status_name!\",\n                      e.definition as \"definition: Value\",\n                      e.initiated_by_user, e.initiated_by_workflow,\n                      e.soft_try_count, e.hard_try_count, e.max_try_count,\n                      e.error, e.next_retry_at, e.locked_until,\n                      e.created_at, e.updated_at, e.started_at, e.completed_at\n               FROM workflow_executions e\n               JOIN lib_fsm.state_machine sm ON sm.state_machine__id = e.status\n               JOIN lib_fsm.abstract_state abs ON abs.abstract_state__id = sm.abstract_state__id\n               WHERE e.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "workflow_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "status",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "status_name!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "definition: Value",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
+        "name": "initiated_by_user",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "initiated_by_workflow",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "soft_try_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "hard_try_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "max_try_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "error",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "next_retry_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "locked_until",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 15,
+        "name": "started_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 16,
+        "name": "completed_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "088e22fb1b3fea93b5c7e97d23ec03a42da21498f823e070c62aac3e85ffe493"
+}

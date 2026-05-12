@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.dependency_id, abs.name as \"status_name!\"\n               FROM workflow_execution_dependencies d\n               JOIN workflow_executions e ON e.id = d.dependency_id\n               JOIN lib_fsm.state_machine sm ON sm.state_machine__id = e.status\n               JOIN lib_fsm.abstract_state abs ON abs.abstract_state__id = sm.abstract_state__id\n               WHERE d.execution_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "dependency_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "status_name!",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "213cb989796b7719f42916909064943f52263cf35308bebaa21405515cdba8f2"
+}

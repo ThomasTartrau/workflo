@@ -1,0 +1,35 @@
+[workspace]
+resolver = "2"
+members = [".", "macros"]
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.75"
+license = "MIT"
+repository = "https://gitlab.com/netir/workflo"
+
+[package]
+name = "workflo"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "A workflow engine for Rust"
+
+[dependencies]
+futures = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "tls-native-tls", "uuid", "time", "macros", "json"] }
+thiserror = "2"
+time = "0.3"
+tokio = { version = "1", features = ["sync", "time", "rt", "macros"] }
+tracing = "0.1"
+rand = "0.8"
+uuid = { version = "1", features = ["v7", "serde"] }
+workflo-macros = { path = "macros" }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+tracing-subscriber = "0.3"

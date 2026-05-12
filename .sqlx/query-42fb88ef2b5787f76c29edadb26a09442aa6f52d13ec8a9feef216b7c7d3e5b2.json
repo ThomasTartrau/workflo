@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE workflow_executions SET started_at = COALESCE(started_at, now()), locked_until = now() + interval '5 minutes', updated_at = now() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "42fb88ef2b5787f76c29edadb26a09442aa6f52d13ec8a9feef216b7c7d3e5b2"
+}

@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH available AS (\n                    SELECT abt.to_abstract_state__id, abt.event, abs.name AS state_from\n                    FROM lib_fsm.state_machine sm\n                    JOIN lib_fsm.abstract_state abs ON abs.abstract_state__id = sm.abstract_state__id\n                    JOIN lib_fsm.abstract_transition abt ON abt.from_abstract_state__id = abs.abstract_state__id\n                    WHERE sm.state_machine__id = $1\n                )\n                SELECT a.state_from as \"state_from!\",\n                       abs.name AS \"state_to!\",\n                       a.event as \"event!\"\n                FROM lib_fsm.abstract_state abs\n                JOIN available a ON a.to_abstract_state__id = abs.abstract_state__id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "state_from!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "state_to!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "event!",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "885f6c242f4159784a2ff96ece2fdd260e4492fdbb2b1500c84937075c2e70cb"
+}
