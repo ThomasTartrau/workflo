@@ -1,0 +1,6 @@
+[advisories]
+ignore = [
+    # rsa: Marvin Attack timing sidechannel. Transitive dep via sqlx -> native-tls.
+    # No fix available upstream. Re-evaluate when rsa > 0.9.10 is released.
+    "RUSTSEC-2023-0071",
+]
