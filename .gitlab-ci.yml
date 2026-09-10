@@ -68,6 +68,9 @@ cargo-fmt:
   stage: check
   image: $CI_RUST_IMAGE
   <<: *rust-cache
+  needs:
+    - job: build-ci-image
+      optional: true
   variables:
     RUSTFLAGS: "-D warnings"
   script:
@@ -78,6 +81,9 @@ cargo-clippy:
   stage: check
   image: $CI_RUST_IMAGE
   <<: *rust-cache
+  needs:
+    - job: build-ci-image
+      optional: true
   variables:
     RUSTFLAGS: "-D warnings"
   script:
@@ -88,6 +94,9 @@ cargo-audit:
   stage: check
   image: $CI_RUST_IMAGE
   <<: *rust-cache
+  needs:
+    - job: build-ci-image
+      optional: true
   script:
     - cargo audit
   allow_failure: false
@@ -97,7 +106,9 @@ unit-tests:
   stage: test
   image: $CI_RUST_IMAGE
   <<: *rust-cache
-  needs: []
+  needs:
+    - job: build-ci-image
+      optional: true
   variables:
     RUSTFLAGS: "-D warnings"
   script:
@@ -108,7 +119,9 @@ doc-tests:
   stage: test
   image: $CI_RUST_IMAGE
   <<: *rust-cache
-  needs: []
+  needs:
+    - job: build-ci-image
+      optional: true
   variables:
     RUSTFLAGS: "-D warnings"
   script:
