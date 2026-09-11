@@ -28,7 +28,7 @@ tokio = { version = "1", features = ["sync", "time", "rt", "macros"] }
 tracing = "0.1"
 rand = "0.8"
 uuid = { version = "1", features = ["v7", "serde"] }
-workflo-macros = { version = "0.1.0", path = "macros" }
+workflo-macros = { version = "0.1.1", path = "macros" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
