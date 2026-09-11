@@ -1,5 +1,6 @@
 target
-/.cargo/
+/.cargo/*
+!/.cargo/audit.toml
 .env*
 .codegraph*
 .codegraph
