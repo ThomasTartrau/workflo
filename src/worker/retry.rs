@@ -1,5 +1,6 @@
 use rand::Rng;
-use time::Duration;
+
+use crate::datetime::Duration;
 
 pub fn retry_delay(hard_try_count: i32) -> Duration {
     let exponent = hard_try_count.max(0) as u32;
