@@ -1,8 +1,8 @@
 use serde_json::Value;
 use sqlx::{Error as SqlxError, PgPool};
-use time::OffsetDateTime;
 use uuid::Uuid;
 
+use crate::datetime::DateTime;
 use crate::error::StoreError;
 use crate::execution::status::ExecutionStatus;
 use crate::execution::{Execution, ExecutionId, NewExecution, WorkflowInitiator};
@@ -28,12 +28,12 @@ struct ExecutionRow {
     hard_try_count: i32,
     max_try_count: i32,
     error: Option<String>,
-    next_retry_at: Option<OffsetDateTime>,
-    locked_until: Option<OffsetDateTime>,
-    created_at: OffsetDateTime,
-    updated_at: OffsetDateTime,
-    started_at: Option<OffsetDateTime>,
-    completed_at: Option<OffsetDateTime>,
+    next_retry_at: Option<DateTime>,
+    locked_until: Option<DateTime>,
+    created_at: DateTime,
+    updated_at: DateTime,
+    started_at: Option<DateTime>,
+    completed_at: Option<DateTime>,
 }
 
 impl TryFrom<ExecutionRow> for Execution {
@@ -263,7 +263,7 @@ impl ExecutionRepository {
         id: ExecutionId,
         soft_try_count: i32,
         hard_try_count: i32,
-        next_retry_at: OffsetDateTime,
+        next_retry_at: DateTime,
     ) -> Result<(), StoreError> {
         let mut tx = pool.begin().await.map_err(db_err)?;
 

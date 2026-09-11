@@ -4,9 +4,9 @@ use std::fmt::{self, Display, Formatter};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use time::OffsetDateTime;
 use uuid::Uuid;
 
+use crate::datetime::DateTime;
 use crate::execution::status::ExecutionStatus;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -56,12 +56,12 @@ pub struct Execution {
     pub hard_try_count: i32,
     pub max_try_count: i32,
     pub error: Option<String>,
-    pub next_retry_at: Option<OffsetDateTime>,
-    pub locked_until: Option<OffsetDateTime>,
-    pub created_at: OffsetDateTime,
-    pub updated_at: OffsetDateTime,
-    pub started_at: Option<OffsetDateTime>,
-    pub completed_at: Option<OffsetDateTime>,
+    pub next_retry_at: Option<DateTime>,
+    pub locked_until: Option<DateTime>,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
+    pub started_at: Option<DateTime>,
+    pub completed_at: Option<DateTime>,
 }
 
 #[derive(Debug)]
@@ -69,6 +69,6 @@ pub struct NewExecution {
     pub workflow_name: String,
     pub definition: Value,
     pub max_try_count: i32,
-    pub schedule_at: Option<OffsetDateTime>,
+    pub schedule_at: Option<DateTime>,
     pub initiated_by: WorkflowInitiator,
 }

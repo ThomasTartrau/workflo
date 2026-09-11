@@ -4,13 +4,13 @@ pub mod retry;
 use std::sync::Arc;
 use std::time::Duration;
 
-use time::OffsetDateTime;
 use tokio::spawn;
 use tokio::sync::watch::Receiver;
 use tokio::sync::Semaphore;
 use tokio::time::sleep;
 use tracing::{error, info, warn};
 
+use crate::datetime::{now_utc, Duration as DateDuration};
 use crate::error::EngineError;
 use crate::execution::status::ExecutionStatus;
 use crate::execution::{Execution, WorkflowInitiator};
@@ -142,7 +142,7 @@ where
                 }
                 ExecutionStatus::Completed => continue,
                 _ => {
-                    let next = OffsetDateTime::now_utc() + time::Duration::seconds(5);
+                    let next = now_utc() + DateDuration::seconds(5);
                     store
                         .schedule_retry(
                             execution.id,
@@ -175,7 +175,7 @@ where
         store
             .save_definition(execution.id, execution.definition.clone())
             .await?;
-        let next = OffsetDateTime::now_utc() + time::Duration::seconds(2);
+        let next = now_utc() + DateDuration::seconds(2);
         store
             .schedule_retry(
                 execution.id,
@@ -201,7 +201,7 @@ where
                 workflow = %execution.workflow_name,
                 "shutdown requested, rescheduling"
             );
-            let next = OffsetDateTime::now_utc();
+            let next = now_utc();
             if let Err(e) = store
                 .schedule_retry(
                     execution.id,
@@ -261,7 +261,7 @@ where
                 }
 
                 let delay = retry_delay(execution.hard_try_count);
-                let next = OffsetDateTime::now_utc() + delay;
+                let next = now_utc() + delay;
                 store
                     .schedule_retry(
                         execution.id,

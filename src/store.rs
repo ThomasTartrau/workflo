@@ -1,8 +1,8 @@
 use std::future::Future;
 
 use serde_json::Value;
-use time::OffsetDateTime;
 
+use crate::datetime::DateTime;
 use crate::error::StoreError;
 use crate::execution::status::ExecutionStatus;
 use crate::execution::{Execution, ExecutionId, NewExecution};
@@ -36,7 +36,7 @@ pub trait ExecutionStore: Send + Sync + 'static {
         id: ExecutionId,
         soft_try_count: i32,
         hard_try_count: i32,
-        next_retry_at: OffsetDateTime,
+        next_retry_at: DateTime,
     ) -> impl Future<Output = Result<(), StoreError>> + Send;
 
     fn mark_completed(
@@ -109,7 +109,7 @@ impl ExecutionStore for PgExecutionStore {
         id: ExecutionId,
         soft_try_count: i32,
         hard_try_count: i32,
-        next_retry_at: OffsetDateTime,
+        next_retry_at: DateTime,
     ) -> Result<(), StoreError> {
         ExecutionRepository::schedule_retry(
             &self.pool,
