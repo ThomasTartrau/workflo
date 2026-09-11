@@ -21,6 +21,9 @@ variables:
   FF_USE_FASTZIP: "1"
   CACHE_COMPRESSION_LEVEL: "fastest"
   CI_RUST_IMAGE: "${CI_REGISTRY_IMAGE}/ci-rust:latest"
+  RELEASE_PLZ_VERSION: "0.3.160"
+  CARGO_HTTP_TIMEOUT: "180"
+  CARGO_NET_RETRY: "5"
 
 .rust-cache: &rust-cache
   cache:
@@ -32,6 +35,12 @@ variables:
       - .cargo/registry/index/
       - .cargo/git/db/
       - .sccache/
+
+.install-release-plz: &install-release-plz
+  - mkdir -p "${CI_PROJECT_DIR}/.cargo/bin"
+  - curl -sSfL "https://github.com/release-plz/release-plz/releases/download/release-plz-v${RELEASE_PLZ_VERSION}/release-plz-x86_64-unknown-linux-musl.tar.gz" | tar -xz -C "${CI_PROJECT_DIR}/.cargo/bin" release-plz
+  - export PATH="${CI_PROJECT_DIR}/.cargo/bin:$PATH"
+  - release-plz --version
 
 build-ci-image:
   stage: check
@@ -127,61 +136,70 @@ doc-tests:
   script:
     - cargo test --workspace --doc
 
-# build-release:
-#   stage: build
-#   image: rust:1.86.0
-#   <<: *rust-cache
-#   script:
-#     - cargo build --workspace --release
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $RELEASE_COMMIT != "true"
+build-release:
+  stage: build
+  image: $CI_RUST_IMAGE
+  <<: *rust-cache
+  script:
+    - cargo build --workspace --release
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $RELEASE_COMMIT != "true"
 
-# release-plz-update:
-#   stage: release
-#   image: rust:1.86.0
-#   <<: *rust-cache
-#   needs:
-#     - build-release
-#   variables:
-#     GIT_DEPTH: 0
-#   before_script:
-#     - export PATH="${CI_PROJECT_DIR}/.cargo/bin:$PATH"
-#     - cargo install release-plz --locked
-#   script:
-#     - git config user.name "release-plz[bot]"
-#     - git config user.email "release-plz@users.noreply.gitlab.com"
-#     - git remote set-url origin "https://gitlab-ci-token:${GITLAB_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git"
-#     - git fetch origin "$CI_COMMIT_BRANCH"
-#     - git checkout -B "$CI_COMMIT_BRANCH" "origin/$CI_COMMIT_BRANCH"
-#     - release-plz release-pr --forge gitlab --git-token "$GITLAB_TOKEN"
-#     - |
-#       MR_IID=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-#         "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/merge_requests?state=opened&search=release-plz&in=source_branch&per_page=1" \
-#         | python3 -c "import sys,json; mrs=json.load(sys.stdin); print(mrs[0]['iid'] if mrs else '')")
-#       if [ -n "$MR_IID" ]; then
-#         curl -s --request PUT --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-#           "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/merge_requests/$MR_IID/merge" \
-#           --data "merge_when_pipeline_succeeds=true"
-#       fi
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $RELEASE_COMMIT != "true"
+release-plz-update:
+  stage: release
+  image: $CI_RUST_IMAGE
+  <<: *rust-cache
+  needs:
+    - build-release
+  variables:
+    GIT_DEPTH: 0
+  before_script:
+    - *install-release-plz
+  script:
+    - git config user.name "release-plz[bot]"
+    - git config user.email "release-plz@users.noreply.gitlab.com"
+    - git remote set-url origin "https://gitlab-ci-token:${GITLAB_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git"
+    - git fetch origin "$CI_COMMIT_BRANCH"
+    - git checkout -B "$CI_COMMIT_BRANCH" "origin/$CI_COMMIT_BRANCH"
+    - release-plz release-pr --forge gitlab --git-token "$GITLAB_TOKEN"
+    - |
+      MR_IID=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+        "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/merge_requests?state=opened&search=release-plz&in=source_branch&per_page=1" \
+        | python3 -c "import sys,json; mrs=json.load(sys.stdin); print(mrs[0]['iid'] if mrs else '')")
+      if [ -n "$MR_IID" ]; then
+        for i in 1 2 3 4 5 6; do
+          RESP=$(curl -s --request PUT --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+            "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/merge_requests/$MR_IID/merge" \
+            --data "merge_when_pipeline_succeeds=true")
+          echo "$RESP"
+          echo "$RESP" | grep -q '"merge_when_pipeline_succeeds":true' && break
+          sleep 10
+        done
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $RELEASE_COMMIT != "true"
 
-# release-plz-release:
-#   stage: release
-#   image: rust:1.86.0
-#   <<: *rust-cache
-#   needs:
-#     - job: build-release
-#       optional: true
-#   variables:
-#     GIT_DEPTH: 0
-#   before_script:
-#     - export PATH="${CI_PROJECT_DIR}/.cargo/bin:$PATH"
-#     - cargo install release-plz --locked
-#   script:
-#     - git remote set-url origin "https://gitlab-ci-token:${GITLAB_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git"
-#     - git fetch origin "$CI_COMMIT_BRANCH"
-#     - git checkout -B "$CI_COMMIT_BRANCH" "origin/$CI_COMMIT_BRANCH"
-#     - release-plz release --forge gitlab --git-token "$GITLAB_TOKEN"
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+release-plz-release:
+  stage: release
+  image: $CI_RUST_IMAGE
+  <<: *rust-cache
+  needs:
+    - job: build-release
+      optional: true
+  variables:
+    GIT_DEPTH: 0
+  before_script:
+    - *install-release-plz
+  script:
+    - git remote set-url origin "https://gitlab-ci-token:${GITLAB_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git"
+    - git fetch origin "$CI_COMMIT_BRANCH"
+    - git checkout -B "$CI_COMMIT_BRANCH" "origin/$CI_COMMIT_BRANCH"
+    - release-plz release --forge gitlab --git-token "$GITLAB_TOKEN"
+  retry:
+    max: 2
+    when:
+      - script_failure
+      - runner_system_failure
+      - stuck_or_timeout_failure
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
