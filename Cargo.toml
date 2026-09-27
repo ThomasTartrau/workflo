@@ -16,6 +16,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "A workflow engine for Rust"
+exclude = ["assets/"]
 
 [features]
 default = ["time"]
